@@ -1,0 +1,18 @@
+name: Run Tests for Frontend and API
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+jobs:
+  run_npm_test_for_frontend_and_api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build and run the tests
+        run: make test_single

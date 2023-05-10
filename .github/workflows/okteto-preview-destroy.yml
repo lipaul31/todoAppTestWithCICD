@@ -1,0 +1,26 @@
+name: Destroy Preview for Closed Pull Request
+on:
+  pull_request:
+    types:
+      - closed
+jobs:
+  destroy_preview_okteto:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Login
+        uses: okteto/login@latest
+        with:
+          token: ${{ secrets.OKTETO_TOKEN }}
+
+      - name: "Activate Namespace"
+        uses: okteto/namespace@latest
+        with:
+          namespace: preview-todo-lipaul31
+
+      - name: "Destroy the pipeline"
+        uses: okteto/destroy-pipeline@latest
+        with:
+          name: pr-${{ github.event.number }}

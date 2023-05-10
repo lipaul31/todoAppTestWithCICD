@@ -1,0 +1,74 @@
+version: '3.8'
+volumes:
+  mongo_data:
+  certificates:
+
+
+services:
+  nginx:
+    depends_on:
+      certs:
+        condition: service_completed_successfully
+      api:
+        condition: service_started
+      frontend:
+        condition: service_started
+    restart: always
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    volumes:
+      - certificates:/etc/ssl/certs/nginx:ro,cached
+    ports:
+      - "443:443"
+
+  certs:
+    build:
+      context: ./certs
+      dockerfile: Dockerfile
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - certificates:/app/certs:delegated
+
+  frontend:
+    restart: always
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - REACT_APP_API_URL=/api
+
+  mongo:
+    image: 'mongo:6.0'
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_DBNAME}
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh mongodb://mongo/test --quiet
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - mongo_data:/data/db
+
+  api:
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: always
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    environment:
+      - MONGODB_URL=${MONGO_URL:-mongodb://mongo/}
+      - MONGODB_USER=${MONGO_USERNAME}
+      - MONGODB_PASS=${MONGO_PASSWORD}
+      - MONGODB_DBNAME=${MONGO_DBNAME}
+      - JWT_SECRET=${JWT_SECRET}
+      - NODE_ENV=production
+      - PORT=4000
+      - FRONTEND_URL=https://${DOMAIN}/

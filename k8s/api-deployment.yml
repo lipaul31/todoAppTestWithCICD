@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: api
+  template:
+    metadata:
+      labels:
+        component: api
+    spec:
+      containers:
+        - name: api
+          image: lipaul31/todo-api
+          ports:
+            - containerPort: 4000
+          env:
+            - name: PORT
+              value: "4000"
+            - name: MONGODB_URL
+              value: mongodb://mongo-cluster-ip-service/
+            - name: MONGODB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mongoinfo
+                  key: MONGO_USERNAME
+            - name: MONGODB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: mongoinfo
+                  key: MONGO_PASSWORD
+            - name: MONGODB_DBNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongoinfo
+                  key: MONGO_DBNAME
+            - name: _DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: mongoinfo
+                  key: DOMAIN
+            - name: FRONTEND_URL
+              value: https://$(_DOMAIN)
